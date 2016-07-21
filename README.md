@@ -8,7 +8,7 @@ docker swarm cluster集群搭建
 - **2 backend是认证端，连接manager和node，是中间层**
 - **3 manager是管理端，用于远程使用CLI管理各个node的服务**
 
-##01 手动搭建
+##01 原生搭建
 **docker swarm** 搭建之前首先需要下载swarm和consul镜像，它们是manager和backend运行的实体对象。
 
 	docker pull index.tenxcloud.com/docker_library/swarm
