@@ -43,7 +43,7 @@ docker swarm cluster集群搭建
 
 于是，再次搜索“boot2docker 与 docker-machine”区别，看到第一条就是docker-machine取代boot2docker的内容，说明确实跟我猜想一致。好，既然知道了两者一样，那就使用docker-machine吧，因为它是用于管理集群。
 
-最后，运行docker-machine -d virtualbox machine000，提示"(machine000) Downloading /root/.docker/machine/cache/boot2docker.iso from https://github.com/boot2docker/boot2docker/releases/download/v1.12.0-rc4/boot2docker.iso",说明只需将下载的文件拷贝到"~/.docker/machine/cache/"目录下即可，拷贝再次运行正确。
+最后，运行docker-machine -d virtualbox machine000，提示 "(machine000) Downloading /root/.docker/machine/cache/boot2docker.iso from https://github.com/boot2docker/boot2docker/releases/download/v1.12.0-rc4/boot2docker.iso", 说明只需将下载的文件拷贝到"~/.docker/machine/cache/"目录下即可，拷贝再次运行正确。
 
 ###2.1 搭建本地集群
 首先简述本地集群搭建过程，这种方式下的machine均是主机上的virtualbox虚拟机，它们与主机组成本地的docker集群。
