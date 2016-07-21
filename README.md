@@ -1,5 +1,5 @@
 
-docker swarm环境搭建
+docker swarm cluster集群搭建
 ------
 ##00 序
 **docker swarm** 是docker生态链中重要一环，它用于搭建基于docker的主机集群，实现远程管理多个节点的基础服务，包括manager、backend、node三个组件构成。
