@@ -36,15 +36,15 @@ docker swarm cluster集群搭建
 	经测试，manager和node之间的docker version必须相同，或者manager的docker version更低，这样才能正常通信，manager与node之间的关系好比是客户端与服务器，而backend的docker version则不影响。
 
 ##02 工具搭建
-**docker machine** 创建和管理集群，首先要需要开启vm的vt选项，折腾了一下，找到了；然后是运行docker-machine，提示没有安装virtualbox，于是安装这个虚拟机，在虚拟机中安装虚拟机也是醉了。
+**docker machine** 创建和管理集群，首先需要开启vm 虚拟机的vt选项，设置“处理器->虚拟化引擎”选项即可；然后运行docker-machine，提示没有安装virtualbox，于是安装相关包。
 
-还有，再次运行docker-machine，提示Boot2Docker ISO未安装，于是下载这个镜像。github上的release版本文件存放在s3 aws的服务器上，国内访问太慢，忍忍也能下，但是花费时间太长，目前没想到办法。
+再次运行docker-machine，提示Boot2Docker ISO未安装，于是下载该镜像。但是github release版本的文件存放在s3 aws的服务器上，国内访问太慢，花费时间太长，目前无它法。
 
-其次，下载完成后，不知道怎么处理这个ISO文件，这要命了，折腾了好久，只看见github boot2docker说是运行“boot2docker init”就创建虚拟机，可是boot2docker不是ISO吗，瞬间懵逼了，后来想明白了是通过boot2docker CLI利用boot2docker ISO创建虚拟机，那么我们刚刚下载的docker-machine呢，难道它们俩都是创建和管理虚拟机的？
+下载完成后，不知道如何处理这个镜像文件，官方称运行“boot2docker init”就创建虚拟机，可是boot2docker不是ISO吗，大写的懵逼。后来知道运行boot2docker CLI，利用boot2docker ISO来创建虚拟机，那么我们刚刚下载的docker-machine呢，难道它和boot2docker都是用于创建和管理虚拟机的？
 
-于是，再次搜索“boot2docker 与 docker-machine”区别，看到第一条就是docker-machine取代boot2docker的内容，说明确实跟我猜想一致。好，既然知道了两者一样，那就使用docker-machine吧，因为它是用于管理集群。
+于是，检索“boot2docker 与 docker-machine区别“，称docker-machine取代boot2docker的内容，说明确实跟我猜想一致。好，既然知道了两者一样，那就使用docker-machine吧，因为它是新版。
 
-最后，运行docker-machine -d virtualbox machine000，提示 "(machine000) Downloading /root/.docker/machine/cache/boot2docker.iso from https://github.com/boot2docker/boot2docker/releases/download/v1.12.0-rc4/boot2docker.iso", 说明只需将下载的文件拷贝到"~/.docker/machine/cache/"目录下即可，拷贝再次运行正确。
+最后，运行docker-machine -d virtualbox machine000，提示 "(machine000) Downloading /root/.docker/machine/cache/boot2docker.iso from /github-to-boot2docker/boot2docker.iso", 说明只需将下载的文件拷贝到"~/.docker/machine/cache/"目录下即可，拷贝再次运行正确。
 
 ![docker-swarm结构图](http://ww4.sinaimg.cn/mw690/a750c5f9jw1f62jg580p0j20sc0eqjsx.jpg)
 
@@ -157,4 +157,3 @@ docker swarm cluster集群搭建
 	--swarm --swarm-discovery  token://tokenID remote
 
 完成上述命令后，再次运行'eval "docker-machine env swarm-manager"； docker info'就能看到新加入的remoteVM。
-
