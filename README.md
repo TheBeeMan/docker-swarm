@@ -139,5 +139,15 @@ docker swarm cluster集群搭建
 	--generic-ssh-key ~/.ssh/id_rsa  \
 	--generic-ssh-port 22 remote
 
+但是，由于remoteVM是我们手动启动的docker daemon，并未像docker-machine创建虚拟机后，会自动生成swarm-agent的容器并运行。使用docker inspect查看节点虚拟机中的swarm-agent的启动命令行，然后在远程端同样执行一次。否则，即使加入到docker-machine ls列表中，但是运行'eval "docker-machine env swarm-manager"； docker info' 仍然看不到新加入的remoteVM。
+	
+	$zdocker/binary-client/docker -H  192.168.99.100:2376 \
+	--tlsverify --tlscacert=/etc/docker/ssl/CA/ca.pem  \
+	--tlskey=/root/.docker/client-key.pem  \
+	--tlscert=/root/.docker/client.pem  \
+	run --rm -e https_proxy=http://MY_PROXY:8080 -e http_proxy=http://MY_PROXY:8080 \
+	swarm  join  --advertise 192.168.99.100:2376 token://tokenID
+
+完成上述步骤后，再次运行'eval "docker-machine env swarm-manager"； docker info'就能看到新加入的remoteVM。
 
 ##03 通信协议
