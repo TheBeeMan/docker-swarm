@@ -5,9 +5,9 @@ docker swarm cluster集群搭建
 **docker swarm** 是docker原生集群，能远程管理多个节点的基础服务，包括manager、backend、node三个组件构成。![docker
  swarm的架构图](http://image.slidesharecdn.com/dockerswarmv1-150401123157-conversion-gate01/95/docker-swarm-introduction-13-638.jpg?cb=1427891574)
 
-- **1 node是基础节点，运行服务**
-- **2 backend是认证端，连接manager和node，是中间层**
-- **3 manager是管理端，用于远程使用CLI管理各个node的服务**
+- **1 node是基础节点，运行用户服务**
+- **2 discovery是后端，用于发现和记录可用的node信息**
+- **3 manager是管理端，开放端口供远程端通过CLI管理各个node的服务**
 
 ##01 原生搭建
 **docker swarm** 搭建之前首先需要下载swarm和consul镜像，它们是manager和backend运行的实体对象。
