@@ -148,6 +148,6 @@ docker swarm cluster集群搭建
 	run --rm -e https_proxy=http://MY_PROXY:8080 -e http_proxy=http://MY_PROXY:8080 \
 	swarm  join  --advertise 192.168.99.100:2376 token://tokenID
 
-完成上述步骤后，再次运行'eval "docker-machine env swarm-manager"； docker info'就能看到新加入的remoteVM。
+完成上述命令后，再次运行'eval "docker-machine env swarm-manager"； docker info'就能看到新加入的remoteVM。
 
 ##03 通信协议
