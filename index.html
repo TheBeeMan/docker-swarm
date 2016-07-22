@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link href='https://fonts.googleapis.com/css?family=Architects+Daughter' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print">
+
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <title>Docker-swarm by TheBeeMan</title>
+  </head>
+
+  <body>
+    <header>
+      <div class="inner">
+        <h1>Docker-swarm</h1>
+        <h2>docker swarm cluster环境搭建，采用原生方式和docker-machine的工具方式</h2>
+        <a href="https://github.com/TheBeeMan/docker-swarm" class="button"><small>View project on</small> GitHub</a>
+      </div>
+    </header>
+
+    <div id="content-wrapper">
+      <div class="inner clearfix">
+        <section id="main-content">
+          <h2>
+<a id="docker-swarm-cluster集群搭建" class="anchor" href="#docker-swarm-cluster%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>docker swarm cluster集群搭建</h2>
+
+<h2>
+<a id="00-序" class="anchor" href="#00-%E5%BA%8F" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>00 序</h2>
+
+<p><strong>docker swarm</strong> 是docker原生集群，能远程管理多个节点的基础服务，包括manager、backend、node三个组件构成。<img src="http://image.slidesharecdn.com/dockerswarmv1-150401123157-conversion-gate01/95/docker-swarm-introduction-13-638.jpg?cb=1427891574" alt="docker
+ swarm的架构图"></p>
+
+<ul>
+<li><strong>1 node是基础节点，运行用户服务</strong></li>
+<li><strong>2 discovery是后端，用于发现和记录可用的node信息</strong></li>
+<li><strong>3 manager是管理端，开放端口供远程端通过CLI管理各个node的服务</strong></li>
+</ul>
+
+<h2>
+<a id="01-原生搭建" class="anchor" href="#01-%E5%8E%9F%E7%94%9F%E6%90%AD%E5%BB%BA" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>01 原生搭建</h2>
+
+<p><strong>docker swarm</strong> 搭建之前首先需要下载swarm和consul镜像，它们是manager和backend运行的实体对象。</p>
+
+<pre><code>docker pull index.tenxcloud.com/docker_library/swarm
+docker pull index.tenxcloud.com/sdvdxl/consul
+</code></pre>
+
+<h3>
+<a id="11-node" class="anchor" href="#11-node" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>1.1 node</h3>
+
+<pre><code>1. 运行docker daemon，开放2375端口
+   sudo docker daemon -H tcp://0.0.0.0:2375 -H unix:///var/run/docker.sock
+2. 连接节点和认证端
+   sudo docker run -d --name=backend000-node000 zkx/swarm join --advertise=192.168.79.184:2375 consul://192.168.79.185:8500     
+</code></pre>
+
+<h3>
+<a id="12-backend" class="anchor" href="#12-backend" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>1.2 backend</h3>
+
+<pre><code>1. 运行docker daemon
+2. 启动consul容器，开放8500端口
+   sudo docker run -d -p 8500:8500 --name=swarm-backend consul -server -bootstrap   
+</code></pre>
+
+<h3>
+<a id="13-manager" class="anchor" href="#13-manager" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>1.3 manager</h3>
+
+<pre><code>1. 运行docker daemon
+2. 启动swarm容器，连接manager和认证端
+   sudo docker run -d --name=manager000-backend000 -p 4000:4000 zkx/swarm manage -H :4000 --replication --advertise 192.168.79.181:4000 consul://192.168.79.185:8500
+</code></pre>
+
+<h3>
+<a id="14-错误类型" class="anchor" href="#14-%E9%94%99%E8%AF%AF%E7%B1%BB%E5%9E%8B" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>1.4 错误类型</h3>
+
+<h3>
+<a id="141-提示error-response-from-daemon-no-elected-primary-cluster-manager" class="anchor" href="#141-%E6%8F%90%E7%A4%BAerror-response-from-daemon-no-elected-primary-cluster-manager" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>1.4.1 提示"Error response from daemon: No elected primary cluster manager"</h3>
+
+<pre><code>这种情况可能是由于backend端在正常连接中突然中断，然后再次启动就会提示上述错误，解决方法就是backend端重新创建和启动基于consul镜像的容器，然后manager端再次restart即可。
+</code></pre>
+
+<h3>
+<a id="142-只能创建单节点无法加入其他节点" class="anchor" href="#142-%E5%8F%AA%E8%83%BD%E5%88%9B%E5%BB%BA%E5%8D%95%E8%8A%82%E7%82%B9%E6%97%A0%E6%B3%95%E5%8A%A0%E5%85%A5%E5%85%B6%E4%BB%96%E8%8A%82%E7%82%B9" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>1.4.2 只能创建单节点，无法加入其他节点</h3>
+
+<pre><code>经测试，manager和node之间的docker version必须相同，或者manager的docker version更低，这样才能正常通信，manager与node之间的关系好比是客户端与服务器，而backend的docker version则不影响。
+</code></pre>
+
+<h2>
+<a id="02-工具搭建" class="anchor" href="#02-%E5%B7%A5%E5%85%B7%E6%90%AD%E5%BB%BA" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>02 工具搭建</h2>
+
+<p><strong>docker machine</strong> 创建和管理集群，首先需要开启vm 虚拟机的vt选项，设置“处理器-&gt;虚拟化引擎”选项即可；然后运行docker-machine，提示没有安装virtualbox，于是安装相关包。</p>
+
+<p>再次运行docker-machine，提示Boot2Docker ISO未安装，于是下载该镜像。但是github release版本的文件存放在s3 aws的服务器上，国内访问太慢，花费时间太长，目前无它法。</p>
+
+<p>下载完成后，不知道如何处理这个镜像文件，官方称运行“boot2docker init”就创建虚拟机，可是boot2docker不是ISO吗，大写的懵逼。后来知道运行boot2docker CLI，利用boot2docker ISO来创建虚拟机，那么我们刚刚下载的docker-machine呢，难道它和boot2docker都是用于创建和管理虚拟机的？</p>
+
+<p>于是，检索“boot2docker 与 docker-machine区别“，称docker-machine取代boot2docker的内容，说明确实跟我猜想一致。好，既然知道了两者一样，那就使用docker-machine吧，因为它是新版。</p>
+
+<p>最后，运行docker-machine -d virtualbox machine000，提示 "(machine000) Downloading /root/.docker/machine/cache/boot2docker.iso from /github-to-boot2docker/boot2docker.iso", 说明只需将下载的文件拷贝到"~/.docker/machine/cache/"目录下即可，拷贝再次运行正确。</p>
+
+<p><img src="http://ww4.sinaimg.cn/mw690/a750c5f9jw1f62jg580p0j20sc0eqjsx.jpg" alt="docker-swarm结构图"></p>
+
+<h3>
+<a id="21-搭建本地集群" class="anchor" href="#21-%E6%90%AD%E5%BB%BA%E6%9C%AC%E5%9C%B0%E9%9B%86%E7%BE%A4" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>2.1 搭建本地集群</h3>
+
+<p>首先简述本地集群搭建过程，这种方式下的machine均是主机上的virtualbox虚拟机，它们与主机组成本地的docker集群。</p>
+
+<pre><code>docker-machine create -d virtualbox hub-token; eval "$(docker-machine env hub-token)"; docker run zkx/swarm create;(获取token的值)
+docker-machine create -d virtualbox --swarm --swarm-master --swarm-discovery token://SWARM_CLUSTER_TOKEN swarm-manager
+docker-machine create -d virtualbox --swarm --swarm-discovery token://SWARM_CLUSTER_TOKEN node000
+docker-machine create -d virtualbox --swarm --swarm-discovery token://SWARM_CLUSTER_TOKEN node001
+</code></pre>
+
+<p>登录 swarm-manager，能够查看node信息：</p>
+
+<pre><code>eval "$(docker-machine env --swarm swarm-manager)"
+docker info
+</code></pre>
+
+<p>注意，目前docker-machine version 0.8.0-rc2，已经默认支持HTTPS协议，swarm cluster中的node和swarm master通过https协议互相访问对方。docker-machine 在第一次运行时在“/root/.docker/”目录下创建cache和certs目录，其中包括自签名的CA证书以及该machine的证书，然后每次创建新的machine时，docker-machine会将certs目录下的“cert.pem”,"key.pem","ca.pem"等公用的公私钥复制到新的machine目录下面，最后还创建新的server.pem和server-key.pem的密钥对。</p>
+
+<h3>
+<a id="22-搭建基于tls协议的c-s" class="anchor" href="#22-%E6%90%AD%E5%BB%BA%E5%9F%BA%E4%BA%8Etls%E5%8D%8F%E8%AE%AE%E7%9A%84c-s" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>2.2 搭建基于Tls协议的C-S</h3>
+
+<p>然后搭建基于TLS协议的docker服务，先在本地尝试。目的是使docker daemon和Cli之间使用https协议进行通信，变得更安全可靠。主要分为创建本地CA、服务器证书、客户端证书等步骤，值得注意的是 openssl.cnf文件内容需要添加如下内容：</p>
+
+<pre><code>subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = docker.local
+IP.1 = 192.168.99.100
+IP.2 = 127.0.0.1
+</code></pre>
+
+<p>注：subjectAltName 在此处用于绑定使用Tls协议的 IP地址或者域名。所以，应该加入docker daemon的IP地址。否则，会提示如下错误：</p>
+
+<pre><code>certificate is valid for xxxx,not for yyyy
+</code></pre>
+
+<h4>
+<a id="221--创建-ca" class="anchor" href="#221--%E5%88%9B%E5%BB%BA-ca" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>2.2.1  创建 CA</h4>
+
+<pre><code>openssl genrsa -out ca-key.pem 2048
+openssl req -x509 -new -nodes \
+-key /etc/docker/ssl/CA/ca-key.pem -days 10000 \
+-out /etc/docker/ssl/CA/ca.pem -subj '/CN=docker-CA'
+</code></pre>
+
+<h4>
+<a id="222--创建服务器证书请求ca为其签名" class="anchor" href="#222--%E5%88%9B%E5%BB%BA%E6%9C%8D%E5%8A%A1%E5%99%A8%E8%AF%81%E4%B9%A6%E8%AF%B7%E6%B1%82ca%E4%B8%BA%E5%85%B6%E7%AD%BE%E5%90%8D" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>2.2.2  创建服务器证书，请求CA为其签名</h4>
+
+<pre><code>openssl genrsa -out server-key.pem 2048
+openssl req -new  \
+-key /etc/docker/ssl/server/server-key.pem -days 10000 
+-out /etc/docker/ssl/server/server.csr \
+-subj '/CN=docker-server' -config /usr/lib/ssl/openssl.cnf
+
+openssl x509 -req \
+-in /etc/docker/ssl/server/server.csr \
+-CA /etc/docker/ssl/CA/ca.pem  \
+-CAkey /etc/docker/ssl/CA/ca-key.pem -CAcreateserial   \
+-out /etc/docker/ssl/server/server.pem -days 365 -extensions v3_req \
+-extfile /usr/lib/ssl/openssl.cnf
+</code></pre>
+
+<h4>
+<a id="223--创建客户端证书请求ca为其签名" class="anchor" href="#223--%E5%88%9B%E5%BB%BA%E5%AE%A2%E6%88%B7%E7%AB%AF%E8%AF%81%E4%B9%A6%E8%AF%B7%E6%B1%82ca%E4%B8%BA%E5%85%B6%E7%AD%BE%E5%90%8D" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>2.2.3  创建客户端证书，请求CA为其签名</h4>
+
+<pre><code>openssl genrsa -out client-key.pem 2048
+openssl req -new  \
+-key /root/.docker/client-key.pem -days 10000 \
+-out /root/.docker/client.csr -subj '/CN=docker-client' \
+-config /usr/lib/ssl/openssl.cnf
+
+openssl x509 -req -in /root/.docker/client.csr \
+-CA /etc/docker/ssl/CA/ca.pem  \
+-CAkey /etc/docker/ssl/CA/ca-key.pem -CAcreateserial  \
+-out //root/.docker/client.pem -days 365 -extensions v3_req \
+-extfile /usr/lib/ssl/openssl.cnf
+</code></pre>
+
+<h4>
+<a id="224--docker-daemon-启动" class="anchor" href="#224--docker-daemon-%E5%90%AF%E5%8A%A8" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>2.2.4  docker daemon 启动</h4>
+
+<pre><code>dockerd -D -g /var/lib/docker -H unix:// -H tcp://0.0.0.0:2376 
+--label provider=virtualbox \
+--tlsverify \
+--tlscacert=/etc/docker/ssl/CA/ca.pem \
+--tlscert=/etc/docker/ssl/server/server.pem \
+--tlskey=/etc/docker/ssl/server/server-key.pem -s aufs
+</code></pre>
+
+<h4>
+<a id="224--docker-cli-验证" class="anchor" href="#224--docker-cli-%E9%AA%8C%E8%AF%81" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>2.2.4  docker cli 验证</h4>
+
+<pre><code>docker -H  192.168.99.100:2376 \
+--tlsverify --tlscacert=/etc/docker/ssl/CA/ca.pem  \
+--tlskey=/root/.docker/client-key.pem  \
+--tlscert=/root/.docker/client.pem \
+info
+</code></pre>
+
+<h3>
+<a id="23-搭建私有主机集群" class="anchor" href="#23-%E6%90%AD%E5%BB%BA%E7%A7%81%E6%9C%89%E4%B8%BB%E6%9C%BA%E9%9B%86%E7%BE%A4" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>2.3 搭建私有主机集群</h3>
+
+<p>在实际生产环境中，本地集群的使用非常有限，通常使用多个云主机分别搭建业务，这些云主机就是集群节点，IP地址不同，但是它们能互相访问到对方。这种情况下，virtualbox驱动不再适用，然而generic驱动可以实现该功能，导入已经存在的VM节点，但前提是这些集群里的节点采用相同的CA签名证书。前面已经提到最新版的docker-machine能够自动实现TLS协议会话，因此在集群节点通信前就已经创建好CA和自己的证书，那么加入远程节点时只需要把之前docker swarm里面的ca.cert、ca-key.cert复制过来，然后用改CA证书签名自己的证书，并再启动daemon时加上tls相应的参数即可。</p>
+
+<h4>
+<a id="231-在localvm运行docker-machine方法如21" class="anchor" href="#231-%E5%9C%A8localvm%E8%BF%90%E8%A1%8Cdocker-machine%E6%96%B9%E6%B3%95%E5%A6%8221" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>2.3.1 在localVM运行docker-machine，方法如2.1</h4>
+
+<h4>
+<a id="232-复制localvm的caepmca-keypem到remotevm中" class="anchor" href="#232-%E5%A4%8D%E5%88%B6localvm%E7%9A%84caepmca-keypem%E5%88%B0remotevm%E4%B8%AD" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>2.3.2 复制localVM的ca.epm,ca-key.pem到remoteVM中。</h4>
+
+<h4>
+<a id="233-remotevm使用该证书签名自己的证书" class="anchor" href="#233-remotevm%E4%BD%BF%E7%94%A8%E8%AF%A5%E8%AF%81%E4%B9%A6%E7%AD%BE%E5%90%8D%E8%87%AA%E5%B7%B1%E7%9A%84%E8%AF%81%E4%B9%A6" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>2.3.3 remoteVM使用该证书签名自己的证书。</h4>
+
+<h4>
+<a id="234-remotevm上启动使用tls协议的daemon" class="anchor" href="#234-remotevm%E4%B8%8A%E5%90%AF%E5%8A%A8%E4%BD%BF%E7%94%A8tls%E5%8D%8F%E8%AE%AE%E7%9A%84daemon" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>2.3.4 remoteVM上启动使用Tls协议的daemon。</h4>
+
+<p>上述准备工作完成后，现在使用generic驱动导入远程节点。</p>
+
+<pre><code>docker-machine create -d generic \
+--generic-ip-address 192.168.79.181 \
+--generic-ssh-key ~/.ssh/id_rsa  \
+--generic-ssh-port 22 remote
+</code></pre>
+
+<p>但是，由于remoteVM是我们手动启动的docker daemon，并未像docker-machine创建虚拟机后，会自动生成swarm-agent的容器并运行。使用docker inspect查看节点虚拟机中的swarm-agent的启动命令行，然后在远程端同样执行一次。否则，即使加入到docker-machine ls列表中，但是运行'eval "docker-machine env swarm-manager"； docker info' 仍然看不到新加入的remoteVM。</p>
+
+<pre><code>$zdocker/binary-client/docker -H  192.168.99.100:2376 \
+--tlsverify --tlscacert=/etc/docker/ssl/CA/ca.pem  \
+--tlskey=/root/.docker/client-key.pem  \
+--tlscert=/root/.docker/client.pem  \
+run --rm -e https_proxy=http://MY_PROXY:8080 -e http_proxy=http://MY_PROXY:8080 \
+swarm  join  --advertise 192.168.99.100:2376 token://tokenID
+</code></pre>
+
+<p>然后再次使用generic驱动导入远程节点</p>
+
+<pre><code>docker-machine create -d generic \
+--generic-ip-address 192.168.99.100 \
+--generic-ssh-key ~/.ssh/id_rsa  \
+--generic-ssh-port 22 \
+--swarm --swarm-discovery  token://tokenID remote
+</code></pre>
+
+<p>完成上述命令后，再次运行'eval "docker-machine env swarm-manager"； docker info'就能看到新加入的remoteVM。</p>
+        </section>
+
+        <aside id="sidebar">
+          <a href="https://github.com/TheBeeMan/docker-swarm/zipball/master" class="button">
+            <small>Download</small>
+            .zip file
+          </a>
+          <a href="https://github.com/TheBeeMan/docker-swarm/tarball/master" class="button">
+            <small>Download</small>
+            .tar.gz file
+          </a>
+
+          <p class="repo-owner"><a href="https://github.com/TheBeeMan/docker-swarm"></a> is maintained by <a href="https://github.com/TheBeeMan">TheBeeMan</a>.</p>
+
+          <p>This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the Architect theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.</p>
+        </aside>
+      </div>
+    </div>
+
+  
+  </body>
+</html>
