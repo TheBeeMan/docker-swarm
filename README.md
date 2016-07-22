@@ -124,7 +124,20 @@ docker swarm cluster集群搭建
 	--tlscert=/root/.docker/client.pem \
 	info
 
-###2.1 搭建公网集群
-在实际的生产环境中，本地集群的使用非常有限，更多还是由多个云主机组成的集群架构。包括swam-master、node共同组成，swarm-master开放某端口给指定的主机和用户访问(默认是2376)，这种添加远程主机到集群中需要generic驱动，而不是virtualbox驱动。
+###2.3 搭建私有主机集群
+在实际生产环境中，本地集群的使用非常有限，通常使用多个云主机分别搭建业务，这些云主机就是集群节点，IP地址不同，但是它们能互相访问到对方。这种情况下，virtualbox驱动不再适用，然而generic驱动可以实现该功能，导入已经存在的VM节点，但前提是这些集群里的节点采用相同的CA签名证书。前面已经提到最新版的docker-machine能够自动实现TLS协议会话，因此在集群节点通信前就已经创建好CA和自己的证书，那么加入远程节点时只需要把之前docker swarm里面的ca.cert、ca-key.cert复制过来，然后用改CA证书签名自己的证书，并再启动daemon时加上tls相应的参数即可。
+
+####2.3.1 在localVM运行docker-machine，方法如2.1
+####2.3.2 复制localVM的ca.epm,ca-key.pem到remoteVM中。
+####2.3.3 remoteVM使用该证书签名自己的证书。
+####2.3.4 remoteVM上启动使用Tls协议的daemon。
+
+上述准备工作完成后，现在使用generic驱动导入远程节点。
+	
+	docker-machine create -d generic \
+	--generic-ip-address 192.168.79.181 \
+	--generic-ssh-key ~/.ssh/id_rsa  \
+	--generic-ssh-port 22 remote
+
 
 ##03 通信协议
