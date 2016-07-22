@@ -46,7 +46,7 @@ docker swarm cluster集群搭建
 
 最后，运行docker-machine -d virtualbox machine000，提示 "(machine000) Downloading /root/.docker/machine/cache/boot2docker.iso from https://github.com/boot2docker/boot2docker/releases/download/v1.12.0-rc4/boot2docker.iso", 说明只需将下载的文件拷贝到"~/.docker/machine/cache/"目录下即可，拷贝再次运行正确。
 
-![docker-swarm结构图](http://ww2.sinaimg.cn/mw690/a750c5f9jw1f62jc5gcxwj20sc0eq78t.jpg)
+![docker-swarm结构图](http://ww4.sinaimg.cn/mw690/a750c5f9jw1f62jg580p0j20sc0eqjsx.jpg)
 
 ###2.1 搭建本地集群
 首先简述本地集群搭建过程，这种方式下的machine均是主机上的virtualbox虚拟机，它们与主机组成本地的docker集群。
