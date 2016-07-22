@@ -2,7 +2,8 @@
 docker swarm cluster集群搭建
 ------
 ##00 序
-**docker swarm** 是docker生态链中重要一环，它用于搭建基于docker的主机集群，实现远程管理多个节点的基础服务，包括manager、backend、node三个组件构成。
+**docker swarm** 是docker原生集群，能远程管理多个节点的基础服务，包括manager、backend、node三个组件构成。下面是[docker
+ swarm的架构图](http://www.google.com/url?sa=i&rct=j&q=&source=imgres&cd=&cad=rja&uact=8&ved=&url=%68%74%74%70%3a%2f%2f%77%77%77%2e%73%6c%69%64%65%73%68%61%72%65%2e%6e%65%74%2f%72%61%6a%64%65%65%70%2f%64%6f%63%6b%65%72%2d%73%77%61%72%6d%2d%69%6e%74%72%6f%64%75%63%74%69%6f%6e&psig=AFQjCNFQBNiqU5tq8fbfdPMVQMuto2dNig&ust=1469239173737518)
 
 - **1 node是基础节点，运行服务**
 - **2 backend是认证端，连接manager和node，是中间层**
