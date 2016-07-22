@@ -76,20 +76,51 @@ docker swarm cluster集群搭建
 
 ####2.2.1  创建 CA
 	openssl genrsa -out ca-key.pem 2048
-	openssl req -x509 -new -nodes -key /etc/docker/ssl/CA/ca-key.pem -days 10000 -out /etc/docker/ssl/CA/ca.pem -subj '/CN=docker-CA'
+	openssl req -x509 -new -nodes \
+	-key /etc/docker/ssl/CA/ca-key.pem -days 10000 \
+	-out /etc/docker/ssl/CA/ca.pem -subj '/CN=docker-CA'
 
 ####2.2.2  创建服务器证书，请求CA为其签名
 	openssl genrsa -out server-key.pem 2048
-	openssl req -new  -key /etc/docker/ssl/server/server-key.pem -days 10000 -out /etc/docker/ssl/server/server.csr -subj '/CN=docker-server' -config /usr/lib/ssl/openssl.cnf
-	openssl x509 -req -in /etc/docker/ssl/server/server.csr -CA /etc/docker/ssl/CA/ca.pem  -CAkey /etc/docker/ssl/CA/ca-key.pem -CAcreateserial   -out /etc/docker/ssl/server/server.pem -days 365 -extensions v3_req -extfile /usr/lib/ssl/openssl.cnf
+	openssl req -new  \
+	-key /etc/docker/ssl/server/server-key.pem -days 10000 
+	-out /etc/docker/ssl/server/server.csr \
+	-subj '/CN=docker-server' -config /usr/lib/ssl/openssl.cnf
+
+	openssl x509 -req \
+	-in /etc/docker/ssl/server/server.csr \
+	-CA /etc/docker/ssl/CA/ca.pem  \
+	-CAkey /etc/docker/ssl/CA/ca-key.pem -CAcreateserial   \
+	-out /etc/docker/ssl/server/server.pem -days 365 -extensions v3_req \
+	-extfile /usr/lib/ssl/openssl.cnf
 
 ####2.2.3  创建客户端证书，请求CA为其签名
 	openssl genrsa -out client-key.pem 2048
-	openssl req -new  -key /root/.docker/client-key.pem -days 10000 -out /root/.docker/client.csr -subj '/CN=docker-client' -config /usr/lib/ssl/openssl.cnf
-	openssl x509 -req -in /root/.docker/client.csr -CA /etc/docker/ssl/CA/ca.pem  -CAkey /etc/docker/ssl/CA/ca-key.pem -CAcreateserial   -out //root/.docker/client.pem -days 365 -extensions v3_req -extfile /usr/lib/ssl/openssl.cnf
+	openssl req -new  \
+	-key /root/.docker/client-key.pem -days 10000 \
+	-out /root/.docker/client.csr -subj '/CN=docker-client' \
+	-config /usr/lib/ssl/openssl.cnf
 
-####2.2.4  客户端验证
-	docker -H  192.168.99.100:2376 --tlsverify --tlscacert=/etc/docker/ssl/CA/ca.pem  --tlskey=/root/.docker/client-key.pem  --tlscert=/root/.docker/client.pem info
+	openssl x509 -req -in /root/.docker/client.csr \
+	-CA /etc/docker/ssl/CA/ca.pem  \
+	-CAkey /etc/docker/ssl/CA/ca-key.pem -CAcreateserial  \
+	-out //root/.docker/client.pem -days 365 -extensions v3_req \
+	-extfile /usr/lib/ssl/openssl.cnf
+
+####2.2.4  docker daemon 启动
+	dockerd -D -g /var/lib/docker -H unix:// -H tcp://0.0.0.0:2376 
+	--label provider=virtualbox \
+	--tlsverify \
+	--tlscacert=/etc/docker/ssl/CA/ca.pem \
+	--tlscert=/etc/docker/ssl/server/server.pem \
+	--tlskey=/etc/docker/ssl/server/server-key.pem -s aufs
+
+####2.2.4  docker cli 验证
+	docker -H  192.168.99.100:2376 \
+	--tlsverify --tlscacert=/etc/docker/ssl/CA/ca.pem  \
+	--tlskey=/root/.docker/client-key.pem  \
+	--tlscert=/root/.docker/client.pem \
+	info
 
 ###2.1 搭建公网集群
 在实际的生产环境中，本地集群的使用非常有限，更多还是由多个云主机组成的集群架构。包括swam-master、node共同组成，swarm-master开放某端口给指定的主机和用户访问(默认是2376)，这种添加远程主机到集群中需要generic驱动，而不是virtualbox驱动。
